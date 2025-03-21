@@ -23,21 +23,35 @@
 			body {
 				font-family: 'Inter', sans-serif;
 			}
+
+			code {
+				font-size: 16px;
+			}
+			
+			.vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+        	}
 		</style>
 	</head>
 	<body>
 		<div class="container">
 		<h1>CS184/284A Spring 2025 Homework 3 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<div style="text-align: center;">Name: Keira Swei</div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
+		Link to webpage: <a href="https://cal-cs184-student.github.io/hw-webpages-webpage/">https://cal-cs184-student.github.io/hw-webpages-webpage/</a>
+
+		<br>
 		
+		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/sp25-hw3-woohooo.git">https://github.com/cal-cs184-student/sp25-hw3-woohooo.git</a>
+
+
 		<figure>
-			<img src="cornell.png" alt="Cornell Boxes with Bunnies" style="width:70%"/>
-			<figcaption>You can add images with captions!</figcaption>
+			<img src="./images/adaptdragon_rate.png" style="width:70%"/>
+			<figcaption><i>dae/sky/dragon.dae</i></figcaption>
 		</figure>
 
 		<!--
@@ -45,62 +59,589 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		<p>
+			In this homework, I generated rays and checked for intersections with triangles 
+			and spheres. I implemented a bounding volume hierarchy to speed up the rendering process.
+			I implemented direct illumination, indirect illumination, and global illumination. 
+			And finally, I used the Russian Roulette method and adaptive sampling.  
+			Going into this homework, I didn’t have the strongest understanding of how direct, 
+			indirect, and global illumination work, so this assignment was really helpful in 
+			solidifying my understanding of these methods and showed me the distinctions between them. This project was challenging but incredibly rewarding; I’m very proud of many of the images I rendered.
+		</p>
 
 		<h2>Part 1: Ray Generation and Scene Intersection</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		<p>
+			Rays help determine visibility, shadows, and lighting in graphics. 
+			Rays are represented as having an origin \( o \) and a direction vector \( d \), and depending on time \( t \):  
+			\(r(t) = o + td\).
+			To generate rays with <code>generate_ray()</code>, I take normalized image coordinates 
+			\( (x, y) \) and convert them into rays in the camera space.  
+		
+			In going from the image space to the camera space, the bottom left corner \((0,0)\) in image space maps to  
+			\(
+			\left(-\tan\left(\frac{hFov}{2}\right), -\tan\left(\frac{vFov}{2}\right), -1\right)
+			\)
+			in camera space, and the top right corner \((1,1)\) in image space maps to  
+			\(
+			\left(\tan\left(\frac{hFov}{2}\right), \tan\left(\frac{vFov}{2}\right), -1\right)
+			\)
+			where \( hFov \) and \( vFov \) are field of view angles. 
+			The ray created in camera space starts at the camera and goes through the calculated coordinates.
+			<br>
+			In world space, <code>Raytrace_pixel()</code> takes \( ns\_aa \) samples in a pixel. 
+			At each random sample in that pixel, I generate a ray by calling <code>generate_ray()</code> and then call 
+			<code>est_radiance_global_illumination</code> on that ray. The radiance across these sampled rays is 
+			averaged to update the pixel at \( (x, y) \).  
+			<br>
+			After generating these rays, they are tested for intersections with scene geometry to determine if 
+			and where they hit. In <code>Triangle::intersect()</code>, I implement the Möller-Trumbore algorithm, 
+			in which I determine the edges of the triangle, compute the determinant to determine if the ray is parallel 
+			to the triangle (in which case there cannot be an intersection), and compute the barycentric coordinates of
+			the plane-intersection point (the point at which the ray intersects the plane defined by the triangle). 
+			If the barycentric coordinates indicate that 
+			the intersection point lies within the triangle, I return true and populate the input intersection structure.  
+		</p>
+		
+		<br>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="./images/CBcube.png" width="400px"/>
+				  <figcaption><i>dae/simple/cube.dae</i></figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="./images/CBempty.png" width="400px"/>
+				  <figcaption><i>dae/sky/empty.dae</i></figcaption>
 				</td>
 			  </tr>
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="./images/CBspheres.png" width="400px"/>
+				  <figcaption><i>dae/sky/CBspheres_lambertian.dae</i></figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="cornell.png" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="./images/CBbunny.png" width="400px"/>
+				  <figcaption>dae/sky/CBbunny.dae</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<br>
+		
+		<h2>Part 2: Bounding Volume Hierarchy</h2>
+		<p>In <code>construct_bvh()</code>, I start by creating a 
+			bounding box and expanding it to encompass all of 
+			the primitives from <i>start</i> to <i>end</i>. 
+			This <code>bbox</code> is used to initialize a new node. 
+			If the number of primitives from <i>start</i> to <i>end</i> 
+			is under <code>max_leaf_size</code>, I assign <code>node->start</code> 
+			and <code>node->end</code> and return the <code>BVHNode</code>:
+			this is a leaf node and the base case. 
+			 Otherwise, I establish the left and right 
+			 children of the node. To split my <code>bbox</code>, I 
+			 used the longest axis, calling <code>bbox.extent</code> 
+			 and evaluating the \(X\), \(Y\), and \(Z\) axes. 
+			 I then find the average of the centroid's selected coordinate 
+			 (\(X\), \(Y\), or \(Z\)), to split 
+			 the primitives across the split axis, into two vectors. 
+			 I then make two recursive calls to <code>construct_bvh()</code>, 
+			 one for the left child (containing primitives less than the split point)
+			and one for the right child (containing primitives greater than or equal to the split point), 
+			 and then return the BVHnode.
+		</p>
+		<br>
+		<p style="width: 100%; text-align: center;">Images rendered with BVH acceleration</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/cow.png" width="400px"/>
+				  <figcaption><i>dae/meshedit/cow.dae</i></figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/max.png" width="400px"/>
+				  <figcaption><i>dae/meshedit/max.dae</i></figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/CBlucy.png" width="400px"/>
+				  <figcaption><i>dae/sky/CBLucy.dae</i></figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/CBdragon.png" width="400px"/>
+				  <figcaption>dae/sky/CBDragon.dae</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>
+			Rendering <i>dae/meshedit/cow.dae</i> without BVH 
+			took 3.0079 seconds, rendering with BVH took 0.0003 seconds.
+			 Rendering <i>dae/meshedit/maxplanck.dae</i> without BVH 
+			 took 42.751 seconds, rendering with BVH took 0.0493 seconds. 
+			 And rendering <i>dae/sky/CBlucy.dae</i> without BVH took 
+			 254.1081 seconds, rendering with BVH took 0.0343 seconds. 
+			 <br>
+			 Using a BVH, we can eliminate the need to check 
+			ray intersections with all of the primitives. 
+			In <code>BVHAccel::intersect()</code>, I return 
+			<code>false</code> if the ray does not intersect 
+			the <code>BVHNode</code>’s bounding box; otherwise, 
+			I check for intersections with the left and right child nodes. 
+			Only if a ray intersects a leaf <code>BVHNode</code> 
+			do we check for ray intersections with the primitives 
+			and determine the closest intersection. 
+			This significantly reduces the number of 
+			primitive intersections that need to be assessed, 
+			reducing the time it takes to render.
+		</p>
+		<br>
+
+		<h2>Part 3: Direct Illumination</h2>
+		<p>In my implementation of <code>estimate_direct_lighting_hemisphere()</code>, 
+			I take <code>num_samples</code> samples, uniformly sampling incoming 
+			ray directions of the hemisphere. I start by sampling a 
+			<code>hemisphereSampler</code> and converting the resulting 
+			coordinates to world space (<code>wi</code>). I create a ray with 
+			<code>hit_p</code> as the origin and <code>wi</code> as the direction vector. 
+			If there is an intersection between that ray and a light source, 
+			I calculate the emission using <code>get_emission()</code>, 
+			evaluate the <code>bsdf()</code>, and determine the cosine term. 
+			Updating <code>L_out</code> as follows: 
+			\[
+			L_{\text{ out}} += \frac{\text{bsdf} \times \text{emitted radiance} \times \cos{\theta}}{\text{pdf}}
+			\]
+			In this instance, because I’m uniformly sampling, the pdf is set 
+			to \( \frac{1}{2\pi} \). Finally, I average <code>L_out</code> by 
+			dividing by <code>num_samples</code>.
+			<br>
+			In my implementation of <code>estimate_direct_lighting_importance()</code>, 
+			I iterate through the lights of the scene, sampling lights rather than sampling 
+			uniform directions in a hemisphere. If the light is a point light source, 
+			I only sample once; otherwise, I sample each light <code>ns_area_light</code> times.
+			I used <code>SceneLight::sample_L()</code> to sample. This function returns 
+			the emitted radiance, writes a world-space unit vector <code>wi</code> 
+			giving the sampled direction between <code>hit_p</code> and the light source, 
+			writes a <code>distToLight</code> double giving the distance between <code>hit_p</code> 
+			and the light source in the <i>wi</i> direction, and provides a pdf for the <code>wi</code>
+			direction. From here, I created a ray with <code>hit_p</code> as the origin 
+			and <i>wi</i> as the direction vector. I set the ray’s <code>max_t</code> 
+			to be <code>distToLight</code>, so that when I check for intersections, 
+			potential occlusions behind the light source do not have an impact.
+			Next, I check for intersections, which would indicate something blocking the light; 
+			if there is no intersection (nothing is blocking), I calculate:
+			\[
+			L_{\text{ light}} += \frac{\text{bsdf} \times \text{emitted radiance} \times \cos{\theta}}{\text{pdf}}
+			\]
+			<code>L_light</code> is summed across the num_samples iterations specific to each 
+			light source and then divided by <code>num_samples</code> 
+			before being added to <code>L_out</code>. <code>L_out</code> represents the outgoing light
+			and is composed of the <code>L_light</code> contributions from each light.
+			<br>
+			Both direct lighting functions essentially use Monte Carlo integration to approximate
+			the integral of incoming light. 
+		</p>
+
+		<p style="width: 100%; text-align: center;">Images rendered with both implementations of the direct lighting function</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse; ">
+    			<tr>
+       				<th></th>
+        			<th style="border: 1.5px solid black; padding: 15px;"><code>estimate_direct_lighting_hemisphere()</code></th>
+        			<th style="border: 1.5px solid black; padding: 15px;"><code>estimate_direct_lighting_importance()</code></th>
+    			</tr>
+   				<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<i>dae/sky/CBempty.dae</i>
+					</th> 
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/9.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/10.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+    			<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<i>dae/sky/CBspheres_lambertian.dae</i>
+					</th> 
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/5.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/6.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+    			<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<i>dae/sky/CBbunny.dae</i>
+					</th>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/1.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/2.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+			</table>
+		</div>
+		<p> <code>estimate_direct_lighting_hemisphere()</code> samples directions uniformly over
+			the hemisphere, leading to high variance. As seen above, the images rendered with
+			<code>estimate_direct_lighting_hemisphere()</code> are grainier and have more noise.  
+			Alternatively, <code>estimate_direct_lighting_importance()</code> samples lights in the scene,
+			thereby focusing samples on the most important parts of the scene. This results in the images
+			rendered with <code>estimate_direct_lighting_importance()</code> appearing smoother and 
+			more accurate.
+		</p>
+		<br>
+		<p style="width: 100%; text-align: center;"><i>dae/sky/dragon.dae</i> with 1, 4, 16, and 64 light rays using light sampling</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/dragon1.png" width="400px"/>
+				  <figcaption>1 sample per light area</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/dragon4.png" width="400px"/>
+				  <figcaption>4 samples per light area</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/dragon16.png" width="400px"/>
+				  <figcaption>16 samples per light area</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/dragon64.png" width="400px"/>
+				  <figcaption>64 samples per light area</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>
+			As shown above, as the number of samples increases per light area, 
+			the images become smoother and less noisy.  With 1 sample per light area,
+			the soft shadows are very grainy, whereas with 64 samples per light area, 
+			transitions from light to dark are more seamless.
+		</p>
+		<br>
+
+
+		<h2>Part 4: Global Illumination</h2>
+		<p>
+			My implementation of indirect lighting starts with <code>est_radiance_global_illumination()</code>. 
+			In this function, I set <code>L_out</code> to be the result of <code>zero_bounce_radiance()</code>. 
+			If the <code>max_ray_depth</code> is greater than or equal to one, I call <code>at_least_one_bounce_radiance()</code>, 
+			before returning <code>L_out</code>.
+			<br>
+			<code>at_least_one_bounce_radiance()</code> starts by calling <code>one_bounce_radiance()</code>. 
+			If the depth of the ray is less than or equal to one, we have completed all <code>max_ray_depth</code> indirect bounces 
+			and return <code>L_out</code> (this is our base case). Otherwise, I randomly sample an incoming ray direction using 
+			<code>sample_f()</code>, setting <code>wi</code> to the sample direction and <code>pdf</code> to the sample probability. 
+			From here, I create a ray with <code>hit_p</code> as the origin and <code>wi</code> (in world coordinates) as the direction vector. 
+			The new ray’s depth is set as the current ray’s depth minus one (this is how I track the completion of an indirect bounce 
+			and ensure max_ray_depth bounces are completed). 
+			If this new ray intersects a light source, then a recursive call is made to <code>at_least_one_bounce_radiance()</code> 
+			to evaluate the next indirect bounce.
+			<br>
+			In my implementation, if <code>isAccumBounces</code> is true, <code>L_out</code> is updated by taking a running sum to 
+			accumulate all light along the path. Otherwise, if <code>isAccumBounces</code> is false, <code>L_out</code> is continuously 
+			overwritten to reflect the light at that specific <code>max_ray_depth</code> bounce.
+		</p>
+		<p style="width: 100%; text-align: center;">Images with global illumination</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/indirect5.png" width="300px"/>
+				  <figcaption><i>dae/sky/CBempty.dae</i></figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/indirect2.png" width="300px"/>
+				  <figcaption><i>dae/sky/CBspheres_lambertian.dae</i></figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/indirect3.png" width="300px"/>
+					<figcaption><i>dae/sky/CBbunny.dae</i></figcaption>
+				  </td>
+			  </tr>
+			  
+			</table>
+		</div>
+		<br>
+		<br>
+
+		<p style="width: 100%; text-align: center;"><i>dae/sky/CBspheres_lambertian.dae isolating direct and indirect illumination</i></p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/direct4.png" width="400px"/>
+				  <figcaption>only direct illumination</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/indirect4.png" width="400px"/>
+				  <figcaption>only indirect illumination</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>In the above images, direct illumination refers to the light coming directly from the light
+			source, and indirect illumination refers to the light bouncing off surfaces.</p>
+		<br>
+
+		<p style="width: 100%; text-align: center;"><i>dae/sky/CBbunny.dae</i> rendering with m bounces of light</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse; ">
+    			<tr>
+       				<th></th>
+        			<th style="border: 1.5px solid black; padding: 15px;"><code>isAccumBounces = false</code></th>
+        			<th style="border: 1.5px solid black; padding: 15px;"><code>isAccumBounces = true</code></th>
+    			</tr>
+   				<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<code>max_ray_depth = 0</code>
+					</th> 
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m0.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m0_accum.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+    			<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<code>max_ray_depth = 1</code>
+					</th> 
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m1.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m1_accum.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+    			<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<code>max_ray_depth = 2</code>
+					</th>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m2.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m2_accum.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+				<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<code>max_ray_depth = 3</code>
+					</th> 
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m3.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m3_accum.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+    			<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<code>max_ray_depth = 4</code>
+					</th> 
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m4.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m4_accum.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+    			<tr>
+        			<th style="border: 1.5px solid black; padding: 15px; writing-mode: vertical-rl; transform: rotate(180deg);">
+						<code>max_ray_depth = 5</code>
+					</th>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m5.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+        			<td style="text-align: center; padding: 15px; border: 1.5px solid black;">
+						<img src="./images/CBbunny_m5_accum.png" width="400px">
+						<figcaption></figcaption>
+					</td>
+    			</tr>
+			</table>
+		</div>
+		<p>In the 2nd bounce of light (<code>m=2</code>), we can observe that the white walls and the bunny 
+			now show some red and blue hues reflected from the red and blue walls in the scene.
+			 Additionally, the ceiling is now visible, as light has reflected back up towards the 
+			 light source, and the red and blue walls themselves are a bit more toned down.  
+			 <br>
+			In the 3rd bounce of light (<code>m=3</code>), the walls and the ceiling are a bit dimmer, 
+			as the light is now bouncing back, as opposed to hitting the wall as we saw in the 2nd bounce.
+			<br>
+			The 2nd and 3rd bounces enhance the realism of this image, 
+			illuminating other parts of the scene, blending colors, and naturally diffusing the light.
+		</p>
+		<br>
+		<p style="width: 100%; text-align: center;"><i>dae/sky/CBbunny.dae</i> Russian Roulette rendering with m bounces of light</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/CBbunny_m0_rr.png" width="400px"/>
+				  <figcaption>max_ray_depth = 0</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/CBbunny_m1_rr.png" width="400px"/>
+					<figcaption>max_ray_depth = 1</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="./images/CBbunny_m2_rr.png" width="400px"/>
+					<figcaption>max_ray_depth = 2</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/CBbunny_m3_rr.png" width="400px"/>
+					<figcaption>max_ray_depth = 3</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="./images/CBbunny_m4_rr.png" width="400px"/>
+					<figcaption>max_ray_depth = 4</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/CBbunny_m100_rr.png" width="400px"/>
+					<figcaption>max_ray_depth = 100</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+		<p>
+			To implement Global Illumination with Russian Roulette, in <code>at_least_one_bounce_radiance()</code>, 
+			I used the <code>coin_flip</code> function to terminate bouncing with a probability of \(0.35\)
+			(returning <code>L_out</code> prematurely). If the function does not terminate, the calculated indirect radiance 
+			found by making the recursive call to <code>at_least_one_bounce_radiance()</code> is divided by \((1 - 0.35\)) 
+			to maintain an unbiased estimate of radiance. Russian Roulette provides a probabilistic way to terminate light paths 
+			other than using a fixed recursion depth.
+		</p>
+		<br>
+		<p style="width: 100%; text-align: center;"><i>dae/sky/CBbunny.dae</i> Russian Roulette rendering with m bounces of light</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/bench_spp1.png" width="400px"/>
+				  <figcaption>1 sample per pixel</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/bench_spp2.png" width="400px"/>
+					<figcaption>2 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="./images/bench_spp4.png" width="400px"/>
+					<figcaption>4 samples per pixel</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/bench_spp8.png" width="400px"/>
+					<figcaption>8 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="./images/bench_spp16.png" width="400px"/>
+					<figcaption>16 samples per pixel</figcaption>
+				</td>
+				<td style="text-align: center;">
+					<img src="./images/bench_spp64.png" width="400px"/>
+					<figcaption>64 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+					<img src="./images/bench_spp1024.png" width="400px"/>
+					<figcaption>1024 samples per pixel</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>As the samples per pixel rates increase, the quality of the rendering
+			 improves.  With only 1 sample per pixel the image is incredibly 
+			 grainy with no fine details. At 16 samples per pixel, the details
+			 of the bench are more evident, but there is still a little bit of
+			 noise. And finally at 1024 samples per pixel, the image is much 
+			 more accurate and seamless.
+		</p>
+		<br>
+
+		<h2>Part 5: Adaptive Sampling</h2>
+		<p>
+			Adaptive sampling attempts to avoid sampling a high, fixed number of 
+			samples per pixel by adjusting the number of samples 
+			based on the variance of pixel values so that we may concentrate 
+			samples in the more difficult parts of the image.
+			<br>
+			I implemented adaptive sampling in <code>raytrace_pixel()</code>. 
+			This function generates camera rays and traces them 
+			through the scene by using <code>est_radiance_global_illumination()</code>.
+			 We define \( I \) as 
+			\( I = 1.96 \cdot \frac{\sigma}{\sqrt{n}} \) to measure the pixel’s convergence. 
+			\( I \) is smaller when the variance 
+			is lower, or the number of samples is higher. We determined that if 
+			\( I \leq \text{maxTolerance} \cdot \mu \), the pixel has 
+			converged and we no longer need to sample it. In my implementation, 
+			I track the mean and variance in each iteration 
+			and calculate and check \( I \) with a frequency determined by <code>samplesPerBatch</code>. 
+			In this way, the radiance is equal to 
+			the accumulated radiance divided by <code>sample_count</code>.
+		</p>
+		<p style="width: 100%; text-align: center;">Images and Sampling Rate with Adaptive Sampling</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/bunny.png" width="400px"/>
+				  <figcaption><i>dae/sky/CBbunny.dae</i> rendering</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/bunny_rate.png" width="400px"/>
+				  <figcaption><i>dae/sky/CBbunny.dae</i> sample rate</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="./images/adaptdragon.png" width="400px"/>
+				  <figcaption><i>dae/sky/dragon.dae</i> rendering</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/adaptdragon_rate.png" width="400px"/>
+				  <figcaption><i>dae/sky/dragon.dae</i> sample rate</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
 		
-		<h2>Part 2: Bounding Volume Hierarchy</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>Part 3: Direct Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>Part 4: Global Illumination</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>Part 5: Adaptive Sampling</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-
-		<h2>(Optional) Part 6: Extra Credit Opportunities</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-		
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
 		</div>
 	</body>
 </html>
