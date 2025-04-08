@@ -43,7 +43,7 @@
 		Link to GitHub repository: <a href="https://github.com/cal-cs184-student/sp25-hw4-yay.git">https://github.com/cal-cs184-student/sp25-hw4-yay.git</a>
 
 		<figure>
-			<img src="./images/main.png" alt="Cloth draped over sphere" style="width:75%"/>
+			<img src="./images/main.png" style="width:75%"/>
 			<figcaption><i>scene/sphere.json</i> with Mirror Shading</figcaption>
 		</figure>
 
@@ -52,7 +52,16 @@
 		-->
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		<p>In this homework, I built a grid of point masses and springs, integrated 
+		physical equations of motion to create a simulation, implemented handling 
+		for collision with objects (sphere and plane) and handling self-collisions, 
+		and created shaders (diffuse shading, Blinn-Phong shading, texture mapping, 
+		bump mapping, displacement mapping, mirror shading). I found task 2 really 
+		interesting and challenging, as playing with the motion equations could 
+		impact the simulation in really cool ways. I also thought the shaders 
+		were really cool, especially considering how challenging homework 3 was for me.
+		</p>
+		<br>
 
 		<h2>Part 1: Masses and springs</h2>
 		<p style="width: 100%; text-align: center;"><i>scene/pinned2.json</i> Wireframe</p>
@@ -109,7 +118,7 @@
 			</table>
 		</div>
 		<p>The default value for the spring constant (ks) is 5,000 N/m. Pictured above is the final resting state of 
-			the cloth with 100 N/m and 10,000 N/m. During the simulation, a low ks resulted in the cloth having more ripples, jiggling
+			the cloth with 100 N/m and 10,000 N/m. During the simulation, a low ks resulted in the cloth having more ripples, jiggling,
 			and stretching more freely. Alternatively, a high ks resulted in a stiffer, more rigid cloth.
 		</p>
 		<br>
@@ -131,7 +140,7 @@
 		</div>
 		<p>The default value for density is 15 g/cm<sup>2</sup>. Pictured above is the final resting state of 
 			the cloth with 5 g/cm<sup>2</sup> and 60 g/cm<sup>2</sup>. During the simulation, a low density resulted in the cloth 
-			appearing lighter, slightly fluttering. A high density resulted in more pronunced waves, 
+			appearing lighter, and slightly fluttering. A high density resulted in more pronounced waves, 
 			with the cloth being pulled down more intensely.
 		</p>
 		<br>
@@ -153,17 +162,17 @@
 		</div>
 		<p>The default value for damping is 0.2%. Pictured above is the final resting state of 
 			the cloth with 0% and ~0.5%. During the simulation, a low damping resulted in the cloth 
-			oscilatting for far far longer, whereas a high damping caused the oscillations to finish abruptly.
+			oscillating for far, far longer, whereas a high damping caused the oscillations to finish abruptly.
 		</p>
 		<br>
 
 		<h2>Part 3: Handling collisions with other objects</h2>
 		<p>
 			In <code>Sphere::collide()</code>, I first determine the distance from the point 
-			mass’ position to the sphere’s origin. If this distance is less than or equal to the 
-			radius, the point mass is at or inside the sphere, and needs to be bumped to the 
+			mass’ <code>position</code> to the sphere’s origin. If this distance is less than or equal to the 
+			radius, the point mass is at or inside the sphere and needs to be bumped to the 
 			surface of the sphere. To do this, I find the tangent point: an intersection point 
-			on the sphere’s surface along the path between the point mass' position and the origin. 
+			on the sphere’s surface along the path between the point mass' <code>position</code> and the origin. 
 			A correction vector is then calculated such that, when added to the point 
 			mass’s <code>last_position</code>, it moves the point mass to the tangent point:
 			<br>
@@ -182,7 +191,7 @@
 			of these vectors with the plane’s normal function will indicate which side of the plane 
 			<code>position</code> and <code>last_position</code> fall on. If <code>position</code> 
 			and <code>last_position</code> fall on opposite sides, the point mass has crossed over 
-			the plane and needs to be bumped to the surface. Next I determine the tangent point: 
+			the plane and needs to be bumped to the surface. Next, I determine the tangent point: 
 			the point along the path from <code>last_position</code> to <code>position</code> 
 			where the point mass would have intersected the plane. I create a correction vector such 
 			that, when added to the point mass’s <code>last_position</code>, it moves the point mass 
@@ -221,10 +230,10 @@
 			  </tr>
 			</table>
 		</div>
-		<p>At ks = 500 N/m, the cloth is very saggy and droppy, showing many pleats and hugging the sphere closely.
-		   At ks = 5,000 N/m, the cloth is less saggy, maintaining a bit more structure, while still hugging the sphere.
-		   At ks = 50,000 N/m, the cloth is very stiff, with sharp creases, and few pleats. 
-		   Ultimately, as the spring constant increases, the cloth becomes sitffer and less flowy. 
+		<p>At ks = 500 N/m, the cloth is very saggy and droopy, showing many pleats and hugging the sphere closely.
+		   At ks = 5,000 N/m, the cloth is less saggy, maintaining a bit more structure while still hugging the sphere.
+		   At ks = 50,000 N/m, the cloth is very stiff, with sharp creases and few pleats. 
+		   Ultimately, as the spring constant increases, the cloth becomes stiffer and less flowy. 
 		</p>
 
 		
@@ -240,6 +249,7 @@
 			  </tr>
 			</table>
 		</div>
+		<br>
 			
 
 		<h2>Part 4: Handling self-collisions</h2>
@@ -530,7 +540,7 @@
 		</div>
 		<br>
 
-		<p style="width: 100%; text-align: center;"><i>scene/sphere.json</i> with Texture Shading</p>
+		<p style="width: 100%; text-align: center;"><i>scene/sphere.json</i> with Texture Mapping</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
@@ -572,8 +582,8 @@
 		</div>
 		<p>Both bump mapping and displacement mapping have the same surface detailing. 
 			However, bump mapping maintains the same seamless cloth silhouette, whereas 
-			the displacement mapping alters the geometry, creating ridges in the cloth. This 
-			is because displacement mapping uses a vertex shader and bump mapping does not.
+			displacement mapping alters the geometry, creating ridges in the cloth. This 
+			is because displacement mapping uses a vertex shader, and bump mapping does not.
 		</p>
 		<br>
 
@@ -615,8 +625,8 @@
 		</div>
 
 		<p>With bump mapping, the change in mesh coarseness does not have a very visible impact. 
-			The higher resolution mesh is slightly rounder, but for the most part the results are comprable.
-			Alternatively, with displacement mapping, the change in mesh coarsness impacts the 
+			The higher resolution mesh is slightly rounder, but for the most part the results are compraable.
+			Alternatively, with displacement mapping, the change in mesh coarseness impacts the 
 			overall shape and accuracy of the image. At the lower resolution mesh, the ridges do not accurately 
 			reflect the indents in the texture. However, at the higher resolution mesh, the displacement mapping creates
 			accurate bumps and indents.
